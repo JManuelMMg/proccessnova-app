@@ -54,9 +54,15 @@ fun PosScreen(navController: NavController, showTopBar: Boolean = false) {
                             val existingItem = cart.items.find { it.productId == product.id }
                             if (existingItem != null) {
                                 val updatedItems = cart.items.map {
-                                    if (it.productId == product.id)
-                                        it.copy(quantity = it.quantity + 1, subtotal = (it.quantity + 1) * it.price)
-                                    else it
+                                    if (it.productId == product.id) {
+                                        val newQty = it.quantity + 1
+                                        val newSubtotal = newQty * it.price
+                                        it.copy(
+                                            quantity = newQty,
+                                            subtotal = newSubtotal,
+                                            taxAmount = newSubtotal * (it.taxRate / 100.0)
+                                        )
+                                    } else it
                                 }
                                 cart = calculateCart(updatedItems)
                             } else {
@@ -66,7 +72,8 @@ fun PosScreen(navController: NavController, showTopBar: Boolean = false) {
                                     price = product.salePrice,
                                     quantity = 1,
                                     taxRate = product.taxRate,
-                                    subtotal = product.salePrice
+                                    subtotal = product.salePrice,
+                                    taxAmount = product.salePrice * (product.taxRate / 100.0)
                                 )
                                 cart = calculateCart(cart.items + newItem)
                             }
@@ -126,7 +133,8 @@ fun PosScreen(navController: NavController, showTopBar: Boolean = false) {
                             isLoading = true
                             val request = CheckoutRequest(
                                 sale_type = "pos",
-                                payments = listOf(PaymentRequest("efectivo", cart.total))
+                                payment_method = "cash",
+                                amount_paid = cart.total
                             )
                             when (val result = repository.checkout(request)) {
                                 is Result.Success -> {
@@ -156,7 +164,8 @@ fun PosScreen(navController: NavController, showTopBar: Boolean = false) {
                         isLoading = true
                         val request = CheckoutRequest(
                             sale_type = "pos",
-                            payments = listOf(PaymentRequest("efectivo", cart.total))
+                            payment_method = "cash",
+                            amount_paid = cart.total
                         )
                         when (val result = repository.checkout(request)) {
                             is Result.Success -> {
@@ -228,17 +237,29 @@ private fun PosContent(
                     item = item,
                     onIncrease = {
                         val updated = cart.items.map {
-                            if (it.productId == item.productId)
-                                it.copy(quantity = it.quantity + 1, subtotal = (it.quantity + 1) * it.price)
-                            else it
+                            if (it.productId == item.productId) {
+                                val newQty = it.quantity + 1
+                                val newSubtotal = newQty * it.price
+                                it.copy(
+                                    quantity = newQty,
+                                    subtotal = newSubtotal,
+                                    taxAmount = newSubtotal * (it.taxRate / 100.0)
+                                )
+                            } else it
                         }
                         onCartUpdate(calculateCart(updated))
                     },
                     onDecrease = {
                         val updated = cart.items.map {
-                            if (it.productId == item.productId && it.quantity > 1)
-                                it.copy(quantity = it.quantity - 1, subtotal = (it.quantity - 1) * it.price)
-                            else it
+                            if (it.productId == item.productId && it.quantity > 1) {
+                                val newQty = it.quantity - 1
+                                val newSubtotal = newQty * it.price
+                                it.copy(
+                                    quantity = newQty,
+                                    subtotal = newSubtotal,
+                                    taxAmount = newSubtotal * (it.taxRate / 100.0)
+                                )
+                            } else it
                         }.filter { it.quantity > 0 }
                         onCartUpdate(calculateCart(updated))
                     },
@@ -342,7 +363,7 @@ fun CheckoutTicketScreen(checkout: CheckoutResponse, onDismiss: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
             Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Venta #${checkout.sale_number}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Venta #${checkout.saleNumber}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(checkout.total.toMXN(), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = PrimaryDark)
                 if (checkout.change > 0) {

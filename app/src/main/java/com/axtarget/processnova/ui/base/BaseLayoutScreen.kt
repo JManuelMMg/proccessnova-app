@@ -140,18 +140,18 @@ fun BaseLayoutScreen(navController: NavController) {
                     .background(Color(0xFFF5F5F5))
             ) {
                 when (selectedModule) {
-                    "dashboard" -> DashboardWebScreen(navController)
-                    "pos" -> PosScreen(navController)
-                    "sales_history" -> SalesHistoryScreen(navController)
-                    "inventory" -> InventoryScreen(navController)
-                    "crm" -> CrmScreen(navController)
-                    "finance" -> FinanceScreen(navController)
-                    "hr" -> HrScreen(navController)
-                    "logistics" -> LogisticsScreen(navController)
-                    "ai" -> AiAssistantScreen(navController)
-                    "notifications" -> NotificationsScreen(navController)
-                    "landing" -> LandingScreen(navController)
-                    "empresa" -> EmpresaScreen(navController)
+                    "dashboard" -> DashboardWebScreen(navController, showTopBar = false)
+                    "pos" -> PosScreen(navController, showTopBar = false)
+                    "sales_history" -> SalesHistoryScreen(navController, showTopBar = false)
+                    "inventory" -> InventoryScreen(navController, showTopBar = false)
+                    "crm" -> CrmScreen(navController, showTopBar = false)
+                    "finance" -> FinanceScreen(navController, showTopBar = false)
+                    "hr" -> HrScreen(navController, showTopBar = false)
+                    "logistics" -> LogisticsScreen(navController, showTopBar = false)
+                    "ai" -> AiAssistantScreen(navController, showTopBar = false)
+                    "notifications" -> NotificationsScreen(navController, showTopBar = false)
+                    "landing" -> LandingScreen(navController, showTopBar = false)
+                    "empresa" -> EmpresaScreen(navController, showTopBar = false)
                     "profile" -> ProfileScreen(
                         navController = navController,
                         onLogout = {

@@ -1,6 +1,7 @@
 package com.axtarget.processnova.data.repository
 
 import com.axtarget.processnova.core.Result
+import com.axtarget.processnova.core.getHttpErrorMessage
 import com.axtarget.processnova.data.api.ApiClient
 import com.axtarget.processnova.data.models.*
 import kotlinx.coroutines.Dispatchers
@@ -14,7 +15,7 @@ class CrmRepository {
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: emptyList())
             } else {
-                Result.Error("Error al obtener clientes", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener clientes"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -28,7 +29,7 @@ class CrmRepository {
                 response.body()?.let { Result.Success(it) }
                     ?: Result.Error("Cliente no encontrado")
             } else {
-                Result.Error("Error al obtener cliente", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener cliente"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -42,7 +43,7 @@ class CrmRepository {
                 response.body()?.let { Result.Success(it) }
                     ?: Result.Error("Error al crear cliente")
             } else {
-                Result.Error("Error al crear cliente", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al crear cliente"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -56,7 +57,7 @@ class CrmRepository {
                 response.body()?.let { Result.Success(it) }
                     ?: Result.Error("Error al actualizar cliente")
             } else {
-                Result.Error("Error al actualizar cliente", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al actualizar cliente"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -69,7 +70,7 @@ class CrmRepository {
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: emptyList())
             } else {
-                Result.Error("Error al obtener leads", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener leads"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -83,7 +84,7 @@ class CrmRepository {
                 response.body()?.let { Result.Success(it) }
                     ?: Result.Error("Error al crear lead")
             } else {
-                Result.Error("Error al crear lead", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al crear lead"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -97,7 +98,7 @@ class CrmRepository {
                 response.body()?.let { Result.Success(it) }
                     ?: Result.Error("Error al actualizar lead")
             } else {
-                Result.Error("Error al actualizar lead", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al actualizar lead"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -110,7 +111,7 @@ class CrmRepository {
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: emptyList())
             } else {
-                Result.Error("Error al obtener oportunidades", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener oportunidades"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -124,7 +125,7 @@ class CrmRepository {
                 response.body()?.let { Result.Success(it) }
                     ?: Result.Error("Error al crear oportunidad")
             } else {
-                Result.Error("Error al crear oportunidad", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al crear oportunidad"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -138,7 +139,7 @@ class CrmRepository {
                 response.body()?.let { Result.Success(it) }
                     ?: Result.Error("Error al actualizar oportunidad")
             } else {
-                Result.Error("Error al actualizar oportunidad", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al actualizar oportunidad"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -151,7 +152,7 @@ class CrmRepository {
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: emptyList())
             } else {
-                Result.Error("Error al obtener campañas", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener campañas"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -164,7 +165,7 @@ class CrmRepository {
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: emptyList())
             } else {
-                Result.Error("Error al obtener interacciones", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener interacciones"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -178,7 +179,7 @@ class CrmRepository {
                 response.body()?.let { Result.Success(it) }
                     ?: Result.Error("Error al crear interacción")
             } else {
-                Result.Error("Error al crear interacción", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al crear interacción"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -186,12 +187,13 @@ class CrmRepository {
     }
 
     private fun handleException(e: Exception): String {
+        android.util.Log.e("CrmRepo", "Error de red", e)
         return when (e) {
-            is java.net.SocketTimeoutException -> "Conexión lenta, verifica tu internet"
+            is java.net.SocketTimeoutException -> "Servidor lento (Render despertando), reintenta en un momento"
             is java.net.UnknownHostException -> "Sin conexión a internet"
-            is java.io.IOException -> "Error de conexión"
+            is java.net.ConnectException -> "No se pudo conectar al servidor. Reintentando..."
+            is java.io.IOException -> "Error de conexión: ${e.message}"
             else -> "Error inesperado: ${e.message}"
         }
     }
 }
-

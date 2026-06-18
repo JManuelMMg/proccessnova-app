@@ -26,7 +26,8 @@ class AuthRepository(
                 val response = ApiClient.authService.login(username, password, token)
                 handleDjangoResponse(response, username)
             } catch (e: Exception) {
-                Result.Error("Fallo de red: ${e.message}")
+                android.util.Log.e("AuthRepo", "Fallo de red en login", e)
+                Result.Error("Error de conexión: ${e.message ?: "Servidor no responde"}")
             }
         }
     }
@@ -46,7 +47,8 @@ class AuthRepository(
                 )
                 handleDjangoResponse(response, username)
             } catch (e: Exception) {
-                Result.Error("Error en registro: ${e.message}")
+                Log.e("AuthRepo", "Fallo en registro", e)
+                Result.Error("Error de conexión: ${e.message}")
             }
         }
     }
@@ -58,7 +60,8 @@ class AuthRepository(
                 val response = ApiClient.authService.requestPasswordReset(email, token)
                 handleDjangoResponse(response, "")
             } catch (e: Exception) {
-                Result.Error("Error al solicitar recuperación: ${e.message}")
+                Log.e("AuthRepo", "Fallo en password reset", e)
+                Result.Error("Error de conexión: ${e.message}")
             }
         }
     }
@@ -70,7 +73,8 @@ class AuthRepository(
                 val response = ApiClient.authService.changePassword(oldPassword, newPassword1, newPassword2, token)
                 handleDjangoResponse(response, "")
             } catch (e: Exception) {
-                Result.Error("Error al cambiar contraseña: ${e.message}")
+                Log.e("AuthRepo", "Fallo en cambio de password", e)
+                Result.Error("Error de conexión: ${e.message}")
             }
         }
     }
@@ -80,8 +84,20 @@ class AuthRepository(
         username: String
     ): Result<String> {
         val bodyString = response.body()?.string() ?: response.errorBody()?.string() ?: ""
+        val contentType = response.body()?.contentType() ?: response.errorBody()?.contentType()
+        val isJson = contentType?.toString()?.contains("application/json") == true
         
-        // 1. ¿ES ÉXITO? (Si el HTML dice "Dashboard", Django nos dejó entrar)
+        // 1. ¿ES ÉXITO?
+        // Caso JSON: El backend ya es una API REST pura
+        if (isJson && response.isSuccessful) {
+            val sessionId = CookieManager.getCookie(Constants.SESSION_COOKIE) ?: ""
+            if (sessionId.isNotEmpty() && username.isNotEmpty()) {
+                sessionManager.saveSession(sessionId, username, "", "")
+            }
+            return Result.Success("Acceso concedido")
+        }
+
+        // Caso HTML: Django devolviendo templates (login exitoso suele redirigir)
         if (bodyString.contains("<title>Dashboard") || bodyString.contains("¡Bienvenido")) {
             val sessionId = CookieManager.getCookie(Constants.SESSION_COOKIE) ?: ""
             if (sessionId.isNotEmpty() && username.isNotEmpty()) {
@@ -90,7 +106,18 @@ class AuthRepository(
             return Result.Success("Acceso concedido")
         }
 
-        // 2. ¿ES ERROR EN HTML? (Extraer mensaje de error del backend)
+        // 2. ¿ES ERROR?
+        if (isJson) {
+            // Intentar extraer "error" o "detail" del JSON
+            return try {
+                val json = com.google.gson.JsonParser.parseString(bodyString).asJsonObject
+                val msg = json.get("detail")?.asString ?: json.get("error")?.asString ?: "Error en el servidor"
+                Result.Error(msg)
+            } catch (e: Exception) {
+                Result.Error("Error en formato de respuesta")
+            }
+        }
+
         if (bodyString.contains("<html") || bodyString.contains("<!DOCTYPE html>")) {
             val errorMatch = Regex("<p class=\"text-sm\">(.*?)</p>").find(bodyString)
             val msg = errorMatch?.groupValues?.get(1) ?: "Error de validación (revisa tus datos)"
@@ -101,7 +128,6 @@ class AuthRepository(
             return Result.Error(msg.replace("&quot;", "\"").replace("&#x27;", "'"))
         }
 
-        // 3. ¿ES ÉXITO POR CÓDIGO?
         if (response.isSuccessful) {
             return Result.Success("Operación exitosa")
         }

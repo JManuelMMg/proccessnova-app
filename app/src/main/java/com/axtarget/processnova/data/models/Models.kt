@@ -3,6 +3,8 @@ package com.axtarget.processnova.data.models
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+import com.google.gson.annotations.SerializedName
+
 // ==================== AUTENTICACIÓN ====================
 
 data class LoginRequest(
@@ -13,9 +15,9 @@ data class LoginRequest(
 
 data class LoginResponse(
     val success: Boolean,
-    val user_name: String? = null,
-    val user_email: String? = null,
-    val org_name: String? = null,
+    @SerializedName("user_name") val userName: String? = null,
+    @SerializedName("user_email") val userEmail: String? = null,
+    @SerializedName("org_name") val orgName: String? = null,
     val message: String? = null
 )
 
@@ -24,19 +26,19 @@ data class RegisterRequest(
     val email: String,
     val password1: String,
     val password2: String,
-    val organization_name: String,
+    @SerializedName("organization_name") val organizationName: String,
     val rfc: String
 )
 
 // ==================== DASHBOARD ====================
 
 data class DashboardData(
-    val todaySales: Double = 0.0,
-    val criticalStock: Int = 0,
-    val newCustomers: Int = 0,
-    val pendingAlerts: Int = 0,
-    val salesChart: List<SalesChartPoint> = emptyList(),
-    val recentSales: List<SaleSummary> = emptyList()
+    @SerializedName("today_sales") val todaySales: Double = 0.0,
+    @SerializedName("critical_stock") val criticalStock: Int = 0,
+    @SerializedName("new_customers") val newCustomers: Int = 0,
+    @SerializedName("pending_alerts") val pendingAlerts: Int = 0,
+    @SerializedName("sales_chart") val salesChart: List<SalesChartPoint> = emptyList(),
+    @SerializedName("recent_sales") val recentSales: List<SaleSummary> = emptyList()
 )
 
 data class SalesChartPoint(
@@ -57,22 +59,23 @@ data class Product(
     val id: Int = 0,
     val name: String = "",
     val description: String = "",
-    val type: String = "producto",
+    val type: String = "product",
     val category: String = "",
-    val categoryId: Int? = null,
+    @SerializedName("category_id") val categoryId: Int? = null,
     val sku: String = "",
     val barcode: String = "",
-    val salePrice: Double = 0.0,
-    val costPrice: Double = 0.0,
-    val taxRate: Double = 16.0,
+    @SerializedName("price") val salePrice: Double = 0.0,
+    @SerializedName("cost") val costPrice: Double = 0.0,
+    @SerializedName("tax_rate") val taxRate: Double = 16.0,
     val weight: Double = 0.0,
     val dimensions: String = "",
-    val imageUrl: String = "",
-    val currentStock: Int = 0,
-    val minStock: Int = 0,
-    val maxStock: Int = 0,
+    @SerializedName("image") val imageUrl: String = "",
+    @SerializedName("current_stock") val currentStock: Int = 0,
+    val stock: Int = 0, // Fallback for sales cache API
+    @SerializedName("min_stock") val minStock: Int = 0,
+    @SerializedName("max_stock") val maxStock: Int = 0,
     val warehouse: String = "",
-    val isActive: Boolean = true
+    @SerializedName("is_active") val isActive: Boolean = true
 ) {
     val stockStatus: StockStatus
         get() = when {
@@ -95,8 +98,8 @@ data class Category(
 
 data class StockMovement(
     val id: Int = 0,
-    val productId: Int = 0,
-    val productName: String = "",
+    @SerializedName("product_id") val productId: Int = 0,
+    @SerializedName("product_name") val productName: String = "",
     val type: String = "",
     val quantity: Int = 0,
     val date: String = "",
@@ -121,7 +124,7 @@ data class PurchaseOrder(
     val status: String = "borrador",
     val total: Double = 0.0,
     val date: String = "",
-    val expectedDate: String = ""
+    @SerializedName("expected_date") val expectedDate: String = ""
 )
 
 data class QuickCreateRequest(
@@ -147,15 +150,16 @@ data class CreateCategoryRequest(
 // ==================== VENTAS / POS ====================
 
 data class CartItem(
-    val productId: Int = 0,
-    val name: String = "",
-    val price: Double = 0.0,
+    @SerializedName("product_id") val productId: Int = 0,
+    @SerializedName("product_name") val name: String = "",
+    @SerializedName("unit_price") val price: Double = 0.0,
     val quantity: Int = 1,
-    val taxRate: Double = 16.0,
-    val subtotal: Double = 0.0
+    @SerializedName("tax_rate") val taxRate: Double = 16.0,
+    @SerializedName("tax_amount") val taxAmount: Double = 0.0,
+    val subtotal: Double = 0.0,
+    val total: Double = 0.0
 ) {
-    val taxAmount: Double get() = subtotal * (taxRate / 100)
-    val totalWithTax: Double get() = subtotal + taxAmount
+    val totalWithTax: Double get() = if (total > 0) total else subtotal + taxAmount
 }
 
 data class Cart(
@@ -182,11 +186,12 @@ data class RemoveFromCartRequest(
 )
 
 data class CheckoutRequest(
-    val customer_id: Int? = null,
-    val sale_type: String = "pos",
-    val payments: List<PaymentRequest> = emptyList(),
-    val coupon_code: String? = null,
-    val loyalty_points_used: Int = 0
+    @SerializedName("customer_id") val customer_id: Int? = null,
+    @SerializedName("sale_type") val sale_type: String = "pos",
+    @SerializedName("payment_method") val payment_method: String = "cash",
+    @SerializedName("amount_paid") val amount_paid: Double = 0.0,
+    @SerializedName("coupon_code") val coupon_code: String? = null,
+    @SerializedName("loyalty_points_used") val loyalty_points_used: Int = 0
 )
 
 data class PaymentRequest(
@@ -197,9 +202,12 @@ data class PaymentRequest(
 
 data class CheckoutResponse(
     val success: Boolean = false,
-    val sale_number: String = "",
+    @SerializedName("sale_id") val saleId: Int = 0,
+    @SerializedName("sale_number") val saleNumber: String = "",
     val total: Double = 0.0,
+    @SerializedName("amount_paid") val amountPaid: Double = 0.0,
     val change: Double = 0.0,
+    @SerializedName("cart_cleared") val cartCleared: Boolean = false,
     val message: String = ""
 )
 
@@ -220,13 +228,13 @@ data class SaleDetail(
     val tax: Double = 0.0,
     val total: Double = 0.0,
     val status: String = "completed",
-    val saleType: String = "pos",
+    @SerializedName("sale_type") val saleType: String = "pos",
     val items: List<SaleItemDetail> = emptyList(),
     val payments: List<SalePaymentDetail> = emptyList()
 )
 
 data class SaleItemDetail(
-    val productName: String = "",
+    @SerializedName("product_name") val productName: String = "",
     val quantity: Int = 0,
     val price: Double = 0.0,
     val subtotal: Double = 0.0
@@ -246,10 +254,10 @@ data class Customer(
     val phone: String = "",
     val rfc: String = "",
     val address: String = "",
-    val lastPurchase: String = "",
-    val lifetimeValue: Double = 0.0,
+    @SerializedName("last_purchase") val lastPurchase: String = "",
+    @SerializedName("lifetime_value") val lifetimeValue: Double = 0.0,
     val score: Int = 0,
-    val isActive: Boolean = true
+    @SerializedName("is_active") val isActive: Boolean = true
 )
 
 data class Lead(
@@ -271,7 +279,7 @@ data class Opportunity(
     val amount: Double = 0.0,
     val probability: Int = 0,
     val stage: String = "prospectacion",
-    val expectedCloseDate: String = "",
+    @SerializedName("expected_close_date") val expectedCloseDate: String = "",
     val notes: String = ""
 ) {
     val weightedAmount: Double get() = amount * (probability / 100.0)
@@ -285,13 +293,13 @@ data class Campaign(
     val budget: Double = 0.0,
     val spent: Double = 0.0,
     val roi: Double = 0.0,
-    val startDate: String = "",
-    val endDate: String = ""
+    @SerializedName("start_date") val startDate: String = "",
+    @SerializedName("end_date") val endDate: String = ""
 )
 
 data class Interaction(
     val id: Int = 0,
-    val customerId: Int = 0,
+    @SerializedName("customer_id") val customerId: Int = 0,
     val type: String = "",
     val subject: String = "",
     val notes: String = "",
@@ -340,7 +348,7 @@ data class FinanceSummary(
 
 data class Employee(
     val id: Int = 0,
-    val fullName: String = "",
+    @SerializedName("fullName") val fullName: String = "",
     val position: String = "",
     val department: String = "",
     val email: String = "",
@@ -349,29 +357,29 @@ data class Employee(
     val nss: String = "",
     val curp: String = "",
     val clabe: String = "",
-    val hireDate: String = "",
-    val payFrequency: String = "quincenal",
+    @SerializedName("hire_date") val hireDate: String = "",
+    @SerializedName("pay_frequency") val payFrequency: String = "quincenal",
     val salary: Double = 0.0,
     val status: String = "activo"
 )
 
 data class AttendanceRecord(
     val id: Int = 0,
-    val employeeId: Int = 0,
-    val employeeName: String = "",
-    val checkIn: String = "",
-    val checkOut: String = "",
-    val hoursWorked: Double = 0.0,
+    @SerializedName("employee_id") val employeeId: Int = 0,
+    @SerializedName("employee_name") val employeeName: String = "",
+    @SerializedName("check_in") val checkIn: String = "",
+    @SerializedName("check_out") val checkOut: String = "",
+    @SerializedName("hours_worked") val hoursWorked: Double = 0.0,
     val date: String = ""
 )
 
 data class PayrollEntry(
     val id: Int = 0,
-    val employeeName: String = "",
+    @SerializedName("employee_name") val employeeName: String = "",
     val period: String = "",
     val perceptions: Double = 0.0,
     val deductions: Double = 0.0,
-    val netPay: Double = 0.0,
+    @SerializedName("net_pay") val netPay: Double = 0.0,
     val status: String = "pendiente"
 )
 
@@ -379,7 +387,7 @@ data class Department(
     val id: Int = 0,
     val name: String = "",
     val manager: String = "",
-    val employeeCount: Int = 0
+    @SerializedName("employee_count") val employeeCount: Int = 0
 )
 
 // ==================== LOGÍSTICA ====================
@@ -391,7 +399,7 @@ data class ShipmentOrder(
     val address: String = "",
     val status: String = "preparando",
     val date: String = "",
-    val deliveryDate: String = "",
+    @SerializedName("delivery_date") val deliveryDate: String = "",
     val driver: String = "",
     val vehicle: String = ""
 )
@@ -411,7 +419,7 @@ data class AppNotification(
     val type: String = "",
     val message: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    val isRead: Boolean = false
+    @SerializedName("is_read") val isRead: Boolean = false
 )
 
 // ==================== IA ====================

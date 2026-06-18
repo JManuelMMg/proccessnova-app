@@ -64,10 +64,12 @@ class LogisticsRepository {
     }
 
     private fun handleException(e: Exception): String {
+        android.util.Log.e("LogisticsRepo", "Error de red", e)
         return when (e) {
-            is java.net.SocketTimeoutException -> "Conexión lenta, verifica tu internet"
+            is java.net.SocketTimeoutException -> "Servidor lento (Render despertando), reintenta en un momento"
             is java.net.UnknownHostException -> "Sin conexión a internet"
-            is java.io.IOException -> "Error de conexión"
+            is java.net.ConnectException -> "No se pudo conectar al servidor. Reintentando..."
+            is java.io.IOException -> "Error de conexión: ${e.message}"
             else -> "Error inesperado: ${e.message}"
         }
     }

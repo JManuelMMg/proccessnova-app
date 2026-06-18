@@ -4,6 +4,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,114 +27,128 @@ import kotlin.math.sin
 fun SplashScreen(onSplashFinished: () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition(label = "nova_core")
     
-    // Animaciones Cinemáticas
-    val rot1 by infiniteTransition.animateFloat(0f, 360f, infiniteRepeatable(tween(5000, easing = LinearEasing)))
-    val rot2 by infiniteTransition.animateFloat(360f, 0f, infiniteRepeatable(tween(10000, easing = LinearEasing)))
-    val orbitAlpha by infiniteTransition.animateFloat(0.2f, 0.8f, infiniteRepeatable(tween(2000), RepeatMode.Reverse))
-    val gridMotion by infiniteTransition.animateFloat(0f, 200f, infiniteRepeatable(tween(2000, easing = LinearEasing)))
-    val scannerLine by infiniteTransition.animateFloat(0f, 1f, infiniteRepeatable(tween(3000, easing = LinearEasing)))
+    // Restauramos las animaciones de rotación y escaneo
+    val rot1 by infiniteTransition.animateFloat(
+        initialValue = 0f, 
+        targetValue = 360f, 
+        animationSpec = infiniteRepeatable(tween(8000, easing = LinearEasing)),
+        label = "rotation"
+    )
+    val scannerLine by infiniteTransition.animateFloat(
+        initialValue = 0f, 
+        targetValue = 1f, 
+        animationSpec = infiniteRepeatable(tween(4000, easing = LinearEasing)),
+        label = "scanner"
+    )
 
     val entranceAlpha = remember { Animatable(0f) }
-    val coreScale = remember { Animatable(0.85f) }
-    var bootMessage by remember { mutableStateOf("INITIALIZING...") }
+    val coreScale = remember { Animatable(0.8f) }
+    var bootMessage by remember { mutableStateOf("INICIALIZANDO...") }
 
     LaunchedEffect(Unit) {
-        launch { entranceAlpha.animateTo(1f, tween(1500)) }
-        launch { coreScale.animateTo(1f, spring(Spring.DampingRatioLowBouncy, Spring.StiffnessLow)) }
+        // Animaciones de entrada en paralelo
+        launch {
+            entranceAlpha.animateTo(1f, tween(1000))
+        }
+        launch {
+            coreScale.animateTo(1f, spring(Spring.DampingRatioLowBouncy))
+        }
         
-        val logs = listOf("LINKING BACKEND...", "SECURITY HANDSHAKE...", "QUANTUM SYNC...", "SYSTEM ONLINE")
-        logs.forEach { bootMessage = it; delay(900) }
+        // Timer de mensajes de carga
+        delay(600)
+        bootMessage = "SINCRONIZANDO..."
+        delay(1000)
+        bootMessage = "LISTO"
+        delay(200)
         onSplashFinished()
     }
 
     Box(
-        modifier = Modifier.fillMaxSize().background(Color(0xFF01040A)),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0B1628)),
         contentAlignment = Alignment.Center
     ) {
-        // --- CAPA 1: GRID 3D EVOLUCIONADO ---
-        Canvas(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0.3f }) {
-            val color = Color(0xFF00D4FF).copy(alpha = 0.15f)
-            val centerY = size.height * 0.45f
-            
-            // Líneas de Perspectiva Dinámica
-            for (i in -12..12) {
+        // --- EFECTO: GRID NOVA ---
+        Canvas(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = 0.2f }) {
+            val gridColor = Color(0xFF00D4FF).copy(alpha = 0.1f)
+            val centerY = size.height * 0.5f
+            for (i in -8..8) {
                 drawLine(
-                    color = color,
+                    color = gridColor,
                     start = Offset(size.width / 2, centerY),
-                    end = Offset(size.width / 2 + (i * 450f), size.height),
-                    strokeWidth = 1.5f
+                    end = Offset(size.width / 2 + (i * 300f), size.height),
+                    strokeWidth = 1f
                 )
-            }
-            // Ondas de Datos Horizontales
-            for (i in 0..12) {
-                val y = centerY + (i * 70f + gridMotion) * (i * 0.4f)
-                if (y < size.height) {
-                    drawLine(color, Offset(0f, y), Offset(size.width, y), 1f)
-                }
             }
         }
 
-        // --- CAPA 2: EFECTO SCANLINE ---
+        // --- EFECTO: SCANNER LINE ---
         Canvas(modifier = Modifier.fillMaxSize()) {
             val lineY = scannerLine * size.height
             drawLine(
-                brush = Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF00D4FF).copy(alpha = 0.1f), Color.Transparent)),
+                brush = Brush.verticalGradient(
+                    listOf(Color.Transparent, Color(0xFF00D4FF).copy(alpha = 0.1f), Color.Transparent)
+                ),
                 start = Offset(0f, lineY),
                 end = Offset(size.width, lineY),
-                strokeWidth = 40.dp.toPx()
+                strokeWidth = 30.dp.toPx()
             )
         }
 
-        // --- CAPA 3: NÚCLEO MECATRÓNICO ---
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.graphicsLayer { 
-            scaleX = coreScale.value; scaleY = coreScale.value; alpha = entranceAlpha.value 
-        }) {
-            // Partículas Orbitales (Simuladas en Canvas)
-            Canvas(modifier = Modifier.size(350.dp)) {
-                val center = Offset(size.width / 2, size.height / 2)
-                repeat(8) { i ->
-                    val angle = (rot1 + i * 45) * (Math.PI / 180).toFloat()
-                    val radius = 140f + sin(rot2 * 0.05f + i) * 20f
-                    drawCircle(
-                        color = Color(0xFF00E5A0).copy(alpha = orbitAlpha),
-                        radius = 2.dp.toPx(),
-                        center = Offset(center.x + cos(angle) * radius, center.y + sin(angle) * radius)
-                    )
-                }
+        // --- EL NÚCLEO (Restaurado con seguridad de visibilidad) ---
+        Box(
+            contentAlignment = Alignment.Center, 
+            modifier = Modifier.graphicsLayer { 
+                scaleX = coreScale.value
+                scaleY = coreScale.value
+                // SEGURO: Si la animación de entrada falla, al menos se ve un 20%
+                alpha = entranceAlpha.value.coerceAtLeast(0.2f) 
+            }
+        ) {
+            // Anillos Orbitales
+            Canvas(modifier = Modifier.size(240.dp).graphicsLayer { rotationZ = -rot1 * 0.5f }) {
+                drawCircle(Color(0xFF00D4FF).copy(alpha = 0.1f), style = Stroke(1f))
+            }
+            
+            Canvas(modifier = Modifier.size(200.dp).graphicsLayer { rotationZ = rot1 }) {
+                drawCircle(
+                    color = Color(0xFF00D4FF), 
+                    style = Stroke(2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(40f, 60f)))
+                )
             }
 
-            // Anillos de Control
-            Canvas(modifier = Modifier.size(260.dp).graphicsLayer { rotationZ = rot1 }) {
-                drawCircle(Color(0xFF00D4FF), style = Stroke(2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(100f, 50f))))
-            }
-            Canvas(modifier = Modifier.size(220.dp).graphicsLayer { rotationZ = rot2 }) {
-                drawCircle(Color.White.copy(alpha = 0.3f), style = Stroke(1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 20f))))
-            }
-
-            // Isotipo
+            // El Logo "A"
             Text(
                 "A",
                 style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 95.sp, fontWeight = FontWeight.Black,
+                    fontSize = 80.sp, 
+                    fontWeight = FontWeight.Black,
                     brush = Brush.verticalGradient(listOf(Color.White, Color(0xFF00D4FF)))
                 )
             )
         }
 
-        // --- CAPA 4: STATUS CONSOLE ---
+        // --- STATUS BAR INFERIOR ---
         Column(
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 70.dp).graphicsLayer { alpha = entranceAlpha.value },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("A X T A R G E T", color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, fontWeight = FontWeight.ExtraLight, letterSpacing = 8.sp)
-            Spacer(modifier = Modifier.height(12.dp))
-            LinearProgressIndicator(
-                modifier = Modifier.width(180.dp).height(1.dp),
-                color = Color(0xFF00D4FF),
-                trackColor = Color.White.copy(alpha = 0.05f)
+            Text(
+                "PROCESS NOVA", 
+                color = Color.White.copy(alpha = 0.7f), 
+                fontSize = 12.sp, 
+                letterSpacing = 6.sp,
+                fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.height(20.dp))
-            Text(bootMessage, color = Color(0xFF00D4FF).copy(alpha = 0.7f), fontSize = 9.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                bootMessage, 
+                color = Color(0xFF00D4FF).copy(alpha = 0.8f), 
+                fontSize = 10.sp
+            )
         }
     }
 }

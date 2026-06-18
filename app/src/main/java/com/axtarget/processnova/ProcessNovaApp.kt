@@ -11,26 +11,30 @@ import com.axtarget.processnova.data.local.AppDatabase
  */
 class ProcessNovaApp : Application() {
 
-    // Inicialización perezosa de la base de datos para evitar fallos en onCreate
+    // Inicialización perezosa con doble verificación para hilos
+    @Volatile
     private var database: AppDatabase? = null
 
+    /**
+     * Retorna la instancia de la base de datos de forma perezosa y segura.
+     */
     fun getDatabase(): AppDatabase {
         return database ?: synchronized(this) {
-            val instanceDb = AppDatabase.getInstance(this)
-            database = instanceDb
-            instanceDb
+            database ?: AppDatabase.getInstance(this).also { database = it }
         }
     }
 
-    lateinit var sessionManager: SessionManager
-        private set
+    // Usamos lazy para que no se cree hasta que realmente se necesite
+    val sessionManager: SessionManager by lazy {
+        SessionManager(applicationContext)
+    }
 
     override fun onCreate() {
         super.onCreate()
         instance = this
 
-        // Inicializar componentes (la base de datos se inicializa perezosamente)
-        sessionManager = SessionManager(this)
+        // Inicialización ligera: ApiClient solo guarda la referencia perezosa
+        // No disparamos sessionManager.isLoggedIn aquí para no bloquear el main thread
         ApiClient.init(sessionManager)
     }
 

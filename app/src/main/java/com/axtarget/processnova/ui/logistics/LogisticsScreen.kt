@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LogisticsScreen(navController: NavController) {
+fun LogisticsScreen(navController: NavController, showTopBar: Boolean = false) {
     val scope = rememberCoroutineScope()
     val repository = remember { LogisticsRepository() }
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -44,34 +44,73 @@ fun LogisticsScreen(navController: NavController) {
         isLoading = false
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Logística") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                    }
+    if (showTopBar) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Logística") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = PrimaryDark, titleContentColor = MaterialTheme.colorScheme.onPrimary, navigationIconContentColor = MaterialTheme.colorScheme.onPrimary)
+                )
+            }
+        ) { padding ->
+            LogisticsContent(
+                modifier = Modifier.padding(padding).fillMaxSize(),
+                selectedTab = selectedTab,
+                onTabSelect = { selectedTab = it },
+                tabs = tabs,
+                isLoading = isLoading,
+                orders = orders,
+                vehicles = vehicles,
+                onStatusChange = { id, status ->
+                    scope.launch { repository.updateOrderStatus(id, status, null) }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = PrimaryDark, titleContentColor = MaterialTheme.colorScheme.onPrimary, navigationIconContentColor = MaterialTheme.colorScheme.onPrimary)
+                onOrderClick = { navController.navigate(Routes.shipmentDetail(it)) }
             )
         }
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            TabRow(selectedTabIndex = selectedTab) {
-                tabs.forEachIndexed { index, title -> Tab(selected = selectedTab == index, onClick = { selectedTab = index }, text = { Text(title) }) }
-            }
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            } else {
-                when (selectedTab) {
-                    0 -> OrderList(orders, onStatusChange = { id, status ->
-                        scope.launch { repository.updateOrderStatus(id, status, null) }
-                    }) { shipmentId ->
-                        navController.navigate(Routes.shipmentDetail(shipmentId))
-                    }
-                    1 -> VehicleList(vehicles)
-                }
+    } else {
+        LogisticsContent(
+            modifier = Modifier.fillMaxSize(),
+            selectedTab = selectedTab,
+            onTabSelect = { selectedTab = it },
+            tabs = tabs,
+            isLoading = isLoading,
+            orders = orders,
+            vehicles = vehicles,
+            onStatusChange = { id, status ->
+                scope.launch { repository.updateOrderStatus(id, status, null) }
+            },
+            onOrderClick = { navController.navigate(Routes.shipmentDetail(it)) }
+        )
+    }
+}
+
+@Composable
+private fun LogisticsContent(
+    modifier: Modifier,
+    selectedTab: Int,
+    onTabSelect: (Int) -> Unit,
+    tabs: List<String>,
+    isLoading: Boolean,
+    orders: List<ShipmentOrder>,
+    vehicles: List<Vehicle>,
+    onStatusChange: (Int, String) -> Unit,
+    onOrderClick: (Int) -> Unit
+) {
+    Column(modifier = modifier) {
+        TabRow(selectedTabIndex = selectedTab) {
+            tabs.forEachIndexed { index, title -> Tab(selected = selectedTab == index, onClick = { onTabSelect(index) }, text = { Text(title) }) }
+        }
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        } else {
+            when (selectedTab) {
+                0 -> OrderList(orders, onStatusChange, onOrderClick)
+                1 -> VehicleList(vehicles)
             }
         }
     }
@@ -79,7 +118,6 @@ fun LogisticsScreen(navController: NavController) {
 
 @Composable
 fun OrderList(orders: List<ShipmentOrder>, onStatusChange: (Int, String) -> Unit, onOrderClick: (Int) -> Unit) {
-    val statusOrder = listOf("preparando", "en_transito", "entregado")
     val statusNames = mapOf("preparando" to "Preparando", "en_transito" to "En tránsito", "entregado" to "Entregado")
     val statusColors = mapOf("preparando" to WarningColor, "en_transito" to InfoColor, "entregado" to SuccessColor)
 
@@ -148,5 +186,3 @@ fun EmptyLogistics(message: String) {
         }
     }
 }
-
-

@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationsScreen(navController: NavController) {
+fun NotificationsScreen(navController: NavController, showTopBar: Boolean = false) {
     val scope = rememberCoroutineScope()
     val repository = remember { NotificationRepository() }
     var notifications by remember { mutableStateOf<List<AppNotification>>(emptyList()) }
@@ -40,61 +40,92 @@ fun NotificationsScreen(navController: NavController) {
         isLoading = false
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Notificaciones") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { navController.navigate(Routes.COMPOSE_NOTIFICATION) }) {
-                        Icon(Icons.Default.Edit, "Nueva")
-                    }
-                    TextButton(onClick = {
-                        scope.launch {
-                            repository.markAllAsRead()
-                            notifications = notifications.map { it.copy(isRead = true) }
+    if (showTopBar) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Notificaciones") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
                         }
-                    }) {
-                        Text("Marcar todas", color = MaterialTheme.colorScheme.onPrimary)
+                    },
+                    actions = {
+                        IconButton(onClick = { navController.navigate(Routes.COMPOSE_NOTIFICATION) }) {
+                            Icon(Icons.Default.Edit, "Nueva")
+                        }
+                        TextButton(onClick = {
+                            scope.launch {
+                                repository.markAllAsRead()
+                                notifications = notifications.map { it.copy(isRead = true) }
+                            }
+                        }) {
+                            Text("Marcar todas", color = MaterialTheme.colorScheme.onPrimary)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = PrimaryDark, titleContentColor = MaterialTheme.colorScheme.onPrimary, navigationIconContentColor = MaterialTheme.colorScheme.onPrimary)
+                )
+            }
+        ) { padding ->
+            NotificationsContent(
+                modifier = Modifier.padding(padding).fillMaxSize(),
+                isLoading = isLoading,
+                notifications = notifications,
+                onNotificationClick = { notification ->
+                    scope.launch {
+                        repository.markAsRead(notification.id)
+                        notifications = notifications.map {
+                            if (it.id == notification.id) it.copy(isRead = true) else it
+                        }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = PrimaryDark, titleContentColor = MaterialTheme.colorScheme.onPrimary, navigationIconContentColor = MaterialTheme.colorScheme.onPrimary)
+                }
             )
         }
-    ) { padding ->
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(notifications) { notification ->
-                    NotificationCard(
-                        notification = notification,
-                        onClick = {
-                            scope.launch {
-                                repository.markAsRead(notification.id)
-                                notifications = notifications.map {
-                                    if (it.id == notification.id) it.copy(isRead = true) else it
-                                }
-                            }
-                        }
-                    )
+    } else {
+        NotificationsContent(
+            modifier = Modifier.fillMaxSize(),
+            isLoading = isLoading,
+            notifications = notifications,
+            onNotificationClick = { notification ->
+                scope.launch {
+                    repository.markAsRead(notification.id)
+                    notifications = notifications.map {
+                        if (it.id == notification.id) it.copy(isRead = true) else it
+                    }
                 }
-                if (notifications.isEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.NotificationsOff, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text("No hay notificaciones", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-                            }
+            }
+        )
+    }
+}
+
+@Composable
+private fun NotificationsContent(
+    modifier: Modifier,
+    isLoading: Boolean,
+    notifications: List<AppNotification>,
+    onNotificationClick: (AppNotification) -> Unit
+) {
+    if (isLoading) {
+        Box(modifier = modifier, contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+    } else {
+        LazyColumn(
+            modifier = modifier,
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(notifications) { notification ->
+                NotificationCard(
+                    notification = notification,
+                    onClick = { onNotificationClick(notification) }
+                )
+            }
+            if (notifications.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(48.dp), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.NotificationsOff, null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("No hay notificaciones", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
                         }
                     }
                 }
@@ -142,5 +173,3 @@ fun NotificationCard(notification: AppNotification, onClick: () -> Unit) {
         }
     }
 }
-
-

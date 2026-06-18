@@ -1,6 +1,7 @@
 package com.axtarget.processnova.data.repository
 
 import com.axtarget.processnova.core.Result
+import com.axtarget.processnova.core.getHttpErrorMessage
 import com.axtarget.processnova.data.api.ApiClient
 import com.axtarget.processnova.data.api.services.*
 import com.axtarget.processnova.data.local.dao.ProductDao
@@ -22,7 +23,7 @@ class InventoryRepository(
                 productDao.insertAll(products.map { it.toCached() })
                 Result.Success(products)
             } else {
-                Result.Error("Error al obtener productos: ${response.code()}", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener productos"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -45,7 +46,7 @@ class InventoryRepository(
                     Result.Success(it)
                 } ?: Result.Error("Producto no encontrado")
             } else {
-                Result.Error("Error al obtener producto", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener producto"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -60,7 +61,7 @@ class InventoryRepository(
                     Result.Success(it)
                 } ?: Result.Error("Error al crear producto")
             } else {
-                Result.Error("Error al crear producto: ${response.code()}", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al crear producto"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -75,7 +76,7 @@ class InventoryRepository(
                     Result.Success(it)
                 } ?: Result.Error("Error al agregar stock")
             } else {
-                Result.Error("Error al agregar stock", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al agregar stock"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -88,7 +89,7 @@ class InventoryRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: emptyList())
             } else {
-                Result.Error("Error al obtener categorías", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener categorías"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -103,7 +104,7 @@ class InventoryRepository(
                     Result.Success(it)
                 } ?: Result.Error("Error al crear categoría")
             } else {
-                Result.Error("Error al crear categoría", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al crear categoría"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -116,7 +117,7 @@ class InventoryRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: emptyList())
             } else {
-                Result.Error("Error al obtener movimientos", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener movimientos"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -129,7 +130,7 @@ class InventoryRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: emptyList())
             } else {
-                Result.Error("Error al obtener proveedores", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener proveedores"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -142,7 +143,7 @@ class InventoryRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: emptyList())
             } else {
-                Result.Error("Error al obtener órdenes de compra", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener órdenes de compra"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -157,7 +158,7 @@ class InventoryRepository(
                     Result.Success(it)
                 } ?: Result.Error("Error al actualizar producto")
             } else {
-                Result.Error("Error al actualizar producto", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al actualizar producto"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -176,10 +177,12 @@ class InventoryRepository(
     )
 
     private fun handleException(e: Exception): String {
+        android.util.Log.e("InventoryRepo", "Error de red", e)
         return when (e) {
-            is java.net.SocketTimeoutException -> "Conexión lenta, verifica tu internet"
+            is java.net.SocketTimeoutException -> "Servidor lento (Render despertando), reintenta en un momento"
             is java.net.UnknownHostException -> "Sin conexión a internet"
-            is java.io.IOException -> "Error de conexión"
+            is java.net.ConnectException -> "No se pudo conectar al servidor. Reintentando..."
+            is java.io.IOException -> "Error de conexión: ${e.message}"
             else -> "Error inesperado: ${e.message}"
         }
     }

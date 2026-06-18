@@ -73,4 +73,13 @@ class SessionManager(private val context: Context) {
     suspend fun clearSession() {
         context.dataStore.edit { it.clear() }
     }
+
+    /**
+     * Limpia la sesión de forma síncrona (usado en interceptores).
+     */
+    fun clearSessionSync() {
+        kotlinx.coroutines.runBlocking {
+            context.dataStore.edit { it.clear() }
+        }
+    }
 }

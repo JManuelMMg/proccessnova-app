@@ -24,13 +24,13 @@ interface FinanceService {
     @POST("finance/api/transactions/")
     suspend fun createTransaction(@Body transaction: Transaction): Response<Transaction>
 
-    @GET("finance/api/income/")
+    @GET("finance/api/incomes/")
     suspend fun getIncome(
         @Query("start_date") startDate: String? = null,
         @Query("end_date") endDate: String? = null
     ): Response<List<Transaction>>
 
-    @POST("finance/api/income/")
+    @POST("finance/api/incomes/")
     suspend fun createIncome(@Body transaction: Transaction): Response<Transaction>
 
     @GET("finance/api/expenses/")

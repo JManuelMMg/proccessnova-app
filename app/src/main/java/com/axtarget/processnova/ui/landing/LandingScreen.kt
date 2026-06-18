@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.LazyListState
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.shadow
@@ -28,140 +29,146 @@ import androidx.navigation.NavController
 import com.axtarget.processnova.ui.navigation.Routes
 import com.axtarget.processnova.ui.theme.*
 
-/**
- * Landing page pública de ProcessNova.
- * Header con menú de navegación estilo web + secciones de contenido.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LandingScreen(navController: NavController) {
-    // Estado de scroll para poder desplazarnos a secciones desde el menú
+fun LandingScreen(navController: NavController, showTopBar: Boolean = true) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Items del menú de navegación
     val navMenuItems = listOf(
         NavMenuItem("Inicio", Icons.Default.Home) { coroutineScope.launch { listState.animateScrollToItem(0) } },
         NavMenuItem("Características", Icons.Default.Star) { coroutineScope.launch { listState.animateScrollToItem(1) } },
         NavMenuItem("Planes", Icons.Default.Paid) { coroutineScope.launch { listState.animateScrollToItem(3) } },
         NavMenuItem("Empresa", Icons.Default.Business) { navController.navigate(Routes.EMPRESA) },
-        // Mantener Icons.Default.Login por compatibilidad (la versión AutoMirrored puede no contener el icono en esta versión)
         NavMenuItem("Iniciar sesión", Icons.Default.Login) { navController.navigate(Routes.LOGIN) },
     )
 
-    Scaffold(
-        topBar = {
-            TopNavBar(navController = navController, navItems = navMenuItems)
-        },
-        containerColor = Color(0xFF0B1628)
-    ) { padding ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(bottom = 32.dp)
-        ) {
-            // HERO
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Brush.radialGradient(colors = listOf(Accent.copy(alpha = 0.15f), Color.Transparent), radius = 600f))
-                        .padding(horizontal = 24.dp, vertical = 56.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Surface(
-                            shape = RoundedCornerShape(100.dp),
-                            color = Accent.copy(alpha = 0.12f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Accent.copy(alpha = 0.3f)),
-                            modifier = Modifier.padding(bottom = 20.dp)
-                        ) {
-                            Text("🚀 ERP Inteligente para PYMES", color = Accent, fontSize = 13.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+    if (showTopBar) {
+        Scaffold(
+            topBar = {
+                TopNavBar(navController = navController, navItems = navMenuItems)
+            },
+            containerColor = Color(0xFF0B1628)
+        ) { padding ->
+            LandingContent(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                listState = listState,
+                navController = navController
+            )
+        }
+    } else {
+        LandingContent(
+            modifier = Modifier.fillMaxSize(),
+            listState = listState,
+            navController = navController
+        )
+    }
+}
+
+@Composable
+private fun LandingContent(
+    modifier: Modifier,
+    listState: LazyListState,
+    navController: NavController
+) {
+    LazyColumn(
+        state = listState,
+        modifier = modifier.background(Color(0xFF0B1628)),
+        contentPadding = PaddingValues(bottom = 32.dp)
+    ) {
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Brush.radialGradient(colors = listOf(Accent.copy(alpha = 0.15f), Color.Transparent), radius = 600f))
+                    .padding(horizontal = 24.dp, vertical = 56.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Surface(
+                        shape = RoundedCornerShape(100.dp),
+                        color = Accent.copy(alpha = 0.12f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Accent.copy(alpha = 0.3f)),
+                        modifier = Modifier.padding(bottom = 20.dp)
+                    ) {
+                        Text("🚀 ERP Inteligente para PYMES", color = Accent, fontSize = 13.sp, fontWeight = FontWeight.Medium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                    }
+                    Text("AxtarGet", fontSize = 44.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+                    Text("Gestiona tu negocio completo desde un solo lugar", fontSize = 18.sp, color = Color(0xFF7A9BB5), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp, bottom = 16.dp))
+                    Text("Inventario, POS, CRM, facturación, RRHH, logística y más — todo integrado con inteligencia artificial.", fontSize = 15.sp, color = Color(0xFF7A9BB5), textAlign = TextAlign.Center, lineHeight = 22.sp)
+                    Spacer(modifier = Modifier.height(28.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        Button(onClick = { navController.navigate(Routes.REGISTER) }, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(10.dp), modifier = Modifier.weight(1f).height(48.dp)) {
+                            Text("Comenzar gratis", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                         }
-                        Text("AxtarGet", fontSize = 44.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
-                        Text("Gestiona tu negocio completo desde un solo lugar", fontSize = 18.sp, color = Color(0xFF7A9BB5), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp, bottom = 16.dp))
-                        Text("Inventario, POS, CRM, facturación, RRHH, logística y más — todo integrado con inteligencia artificial.", fontSize = 15.sp, color = Color(0xFF7A9BB5), textAlign = TextAlign.Center, lineHeight = 22.sp)
-                        Spacer(modifier = Modifier.height(28.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                            Button(onClick = { navController.navigate(Routes.REGISTER) }, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(10.dp), modifier = Modifier.weight(1f).height(48.dp)) {
-                                Text("Comenzar gratis", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            }
-                            OutlinedButton(onClick = { navController.navigate(Routes.EMPRESA) }, shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Accent.copy(alpha = 0.5f)), modifier = Modifier.weight(1f).height(48.dp)) {
-                                Text("Conocer más", color = Accent, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                            }
+                        OutlinedButton(onClick = { navController.navigate(Routes.EMPRESA) }, shape = RoundedCornerShape(10.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Accent.copy(alpha = 0.5f)), modifier = Modifier.weight(1f).height(48.dp)) {
+                            Text("Conocer más", color = Accent, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                         }
                     }
                 }
             }
+        }
 
-            // FEATURES
-            item {
-                Text("Características", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp))
-            }
-            item {
-                val features = listOf(
-                    FeatureData("📦", "Inventario", "Control de stock en tiempo real con alertas automáticas"),
-                    FeatureData("💳", "POS", "Punto de venta rápido con soporte para múltiples métodos de pago"),
-                    FeatureData("👥", "CRM", "Gestiona clientes, seguimiento de oportunidades y ventas"),
-                    FeatureData("💰", "Finanzas", "Facturación CFDI 4.0, cuentas por cobrar y reportes"),
-                    FeatureData("👷", "RRHH", "Gestión de empleados, nóminas y cumplimiento NOM-035"),
-                    FeatureData("🚚", "Logística", "Envíos, rutas y seguimiento de paquetes en tiempo real"),
-                    FeatureData("🤖", "Asistente IA", "Análisis predictivo, recomendaciones y automatización"),
-                    FeatureData("📧", "Notificaciones", "Comunicación integrada con tu equipo y clientes"),
-                    FeatureData("📊", "Dashboard", "Métricas en tiempo real con gráficos interactivos")
-                )
-                Column(modifier = Modifier.padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    features.chunked(3).forEach { row ->
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            row.forEach { feature -> FeatureCard(modifier = Modifier.weight(1f), icon = feature.icon, title = feature.title, description = feature.description) }
-                            repeat(3 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
-                        }
+        item {
+            Text("Características", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp))
+        }
+        item {
+            val features = listOf(
+                FeatureData("📦", "Inventario", "Control de stock en tiempo real con alertas automáticas"),
+                FeatureData("💳", "POS", "Punto de venta rápido con soporte para múltiples métodos de pago"),
+                FeatureData("👥", "CRM", "Gestiona clientes, seguimiento de oportunidades y ventas"),
+                FeatureData("💰", "Finanzas", "Facturación CFDI 4.0, cuentas por cobrar y reportes"),
+                FeatureData("👷", "RRHH", "Gestión de empleados, nóminas y cumplimiento NOM-035"),
+                FeatureData("🚚", "Logística", "Envíos, rutas y seguimiento de paquetes en tiempo real"),
+                FeatureData("🤖", "Asistente IA", "Análisis predictivo, recomendaciones y automatización"),
+                FeatureData("📧", "Notificaciones", "Comunicación integrada con tu equipo y clientes"),
+                FeatureData("📊", "Dashboard", "Métricas en tiempo real con gráficos interactivos")
+            )
+            Column(modifier = Modifier.padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                features.chunked(3).forEach { row ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        row.forEach { feature -> FeatureCard(modifier = Modifier.weight(1f), icon = feature.icon, title = feature.title, description = feature.description) }
+                        repeat(3 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                     }
                 }
             }
+        }
 
-            // PLANES
-            item {
-                Text("Planes", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp))
+        item {
+            Text("Planes", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White, modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp))
+        }
+        item {
+            Row(modifier = Modifier.padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PricingCard(modifier = Modifier.weight(1f), name = "Starter", price = "Gratis", period = "para siempre", features = listOf("Hasta 100 productos", "1 usuario", "POS básico", "Soporte por email"), isPopular = false, cta = "Comenzar", onCta = { navController.navigate(Routes.REGISTER) })
+                PricingCard(modifier = Modifier.weight(1f), name = "Pro", price = "\$499", period = "/mes", features = listOf("Productos ilimitados", "Hasta 10 usuarios", "Todos los módulos", "Asistente IA", "Soporte prioritario"), isPopular = true, cta = "Probar 14 días", onCta = { navController.navigate(Routes.REGISTER) })
+                PricingCard(modifier = Modifier.weight(1f), name = "Enterprise", price = "Custom", period = "a medida", features = listOf("Usuarios ilimitados", "Infraestructura dedicada", "API pública", "SLA 99.99%", "Account manager"), isPopular = false, cta = "Contactar", onCta = { navController.navigate(Routes.REGISTER) })
             }
-            item {
-                Row(modifier = Modifier.padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    PricingCard(modifier = Modifier.weight(1f), name = "Starter", price = "Gratis", period = "para siempre", features = listOf("Hasta 100 productos", "1 usuario", "POS básico", "Soporte por email"), isPopular = false, cta = "Comenzar", onCta = { navController.navigate(Routes.REGISTER) })
-                    PricingCard(modifier = Modifier.weight(1f), name = "Pro", price = "\$499", period = "/mes", features = listOf("Productos ilimitados", "Hasta 10 usuarios", "Todos los módulos", "Asistente IA", "Soporte prioritario"), isPopular = true, cta = "Probar 14 días", onCta = { navController.navigate(Routes.REGISTER) })
-                    PricingCard(modifier = Modifier.weight(1f), name = "Enterprise", price = "Custom", period = "a medida", features = listOf("Usuarios ilimitados", "Infraestructura dedicada", "API pública", "SLA 99.99%", "Account manager"), isPopular = false, cta = "Contactar", onCta = { navController.navigate(Routes.REGISTER) })
-                }
-            }
+        }
 
-            // CTA FINAL
-            item {
-                Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF0B1E45))) {
-                    Column(modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("¿Listo para transformar tu negocio?", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
-                        Text("Únete a las PYMES que ya gestionan mejor con ProcessNova", color = Color(0xFF7A9BB5), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp, bottom = 24.dp))
-                        Button(onClick = { navController.navigate(Routes.REGISTER) }, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) {
-                            Text("Crear cuenta gratis", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        }
+        item {
+            Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp), shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF0B1E45))) {
+                Column(modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("¿Listo para transformar tu negocio?", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White, textAlign = TextAlign.Center)
+                    Text("Únete a las PYMES que ya gestionan mejor con ProcessNova", color = Color(0xFF7A9BB5), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp, bottom = 24.dp))
+                    Button(onClick = { navController.navigate(Routes.REGISTER) }, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                        Text("Crear cuenta gratis", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             }
+        }
 
-            // FOOTER
-            item {
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("AxtarGet © 2025", color = Color(0xFF4A6580), fontSize = 13.sp)
-                    Text("Todos los derechos reservados", color = Color(0xFF4A6580), fontSize = 12.sp)
-                }
+        item {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("AxtarGet © 2025", color = Color(0xFF4A6580), fontSize = 13.sp)
+                Text("Todos los derechos reservados", color = Color(0xFF4A6580), fontSize = 12.sp)
             }
         }
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TopNavBar(navController: NavController, navItems: List<NavMenuItem>) {
-    val scrollState = rememberLazyListState() // Para futuras animaciones de scroll
-    
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -189,13 +196,11 @@ private fun TopNavBar(navController: NavController, navItems: List<NavMenuItem>)
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Brand Identity con efecto de brillo
                 Row(
                     verticalAlignment = Alignment.CenterVertically, 
                     modifier = Modifier.weight(1f)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        // Glow detrás del logo
                         Surface(
                             shape = CircleShape,
                             color = Accent.copy(alpha = 0.2f),
@@ -235,7 +240,6 @@ private fun TopNavBar(navController: NavController, navItems: List<NavMenuItem>)
                     }
                 }
 
-                // Desktop-style Menu
                 BoxWithConstraints {
                     if (maxWidth > 600.dp) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -264,7 +268,6 @@ private fun TopNavBar(navController: NavController, navItems: List<NavMenuItem>)
                             }
                         }
                     } else {
-                        // Mobile Menu
                         var expanded by remember { mutableStateOf(false) }
                         IconButton(
                             onClick = { expanded = true },

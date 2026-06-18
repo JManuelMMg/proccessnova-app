@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.axtarget.processnova.ProcessNovaApp
+import com.axtarget.processnova.core.toShortDate
 import com.axtarget.processnova.core.toMXN
 import com.axtarget.processnova.data.models.DashboardData
 import com.axtarget.processnova.data.models.SaleSummary
@@ -43,6 +44,23 @@ fun DashboardScreen(navController: NavController) {
     val userName by sessionManager.userName.collectAsState(initial = "")
     val orgName by sessionManager.orgName.collectAsState(initial = "")
     val branchName by sessionManager.branchName.collectAsState(initial = "Principal")
+
+    var dashboardData by remember { mutableStateOf<DashboardData?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    val dashboardService = remember { com.axtarget.processnova.data.api.ApiClient.dashboardService }
+
+    LaunchedEffect(Unit) {
+        isLoading = true
+        try {
+            val response = dashboardService.getDashboard()
+            if (response.isSuccessful) {
+                dashboardData = response.body()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Dashboard", "Error fetching data", e)
+        }
+        isLoading = false
+    }
 
     Scaffold(
         topBar = {
@@ -117,18 +135,25 @@ fun DashboardScreen(navController: NavController) {
             }
         }
     ) { padding ->
-        when (selectedTab) {
-            0 -> DashboardHomeContent(
-                modifier = Modifier.padding(padding),
-                userName = userName,
-                orgName = orgName,
-                branchName = branchName,
-                navController = navController
-            )
-            1 -> InventoryTabContent(modifier = Modifier.padding(padding), navController = navController)
-            2 -> PosTabContent(modifier = Modifier.padding(padding), navController = navController)
-            3 -> CrmTabContent(modifier = Modifier.padding(padding), navController = navController)
-            4 -> FinanceTabContent(modifier = Modifier.padding(padding), navController = navController)
+        if (isLoading && selectedTab == 0) {
+            Box(modifier = Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            when (selectedTab) {
+                0 -> DashboardHomeContent(
+                    modifier = Modifier.padding(padding),
+                    userName = userName,
+                    orgName = orgName,
+                    branchName = branchName,
+                    data = dashboardData ?: DashboardData(),
+                    navController = navController
+                )
+                1 -> InventoryTabContent(modifier = Modifier.padding(padding), navController = navController)
+                2 -> PosTabContent(modifier = Modifier.padding(padding), navController = navController)
+                3 -> CrmTabContent(modifier = Modifier.padding(padding), navController = navController)
+                4 -> FinanceTabContent(modifier = Modifier.padding(padding), navController = navController)
+            }
         }
     }
 }
@@ -142,6 +167,7 @@ fun DashboardHomeContent(
     userName: String,
     orgName: String,
     branchName: String,
+    data: DashboardData,
     navController: NavController
 ) {
     LazyColumn(
@@ -192,14 +218,14 @@ fun DashboardHomeContent(
                 KpiCard(
                     modifier = Modifier.weight(1f),
                     title = "Ventas hoy",
-                    value = 0.0.toMXN(),
+                    value = data.todaySales.toMXN(),
                     icon = Icons.Default.AttachMoney,
                     color = SuccessColor
                 )
                 KpiCard(
                     modifier = Modifier.weight(1f),
                     title = "Stock crítico",
-                    value = "0 productos",
+                    value = "${data.criticalStock} productos",
                     icon = Icons.Default.Warning,
                     color = StockCritical
                 )
@@ -214,14 +240,14 @@ fun DashboardHomeContent(
                 KpiCard(
                     modifier = Modifier.weight(1f),
                     title = "Clientes nuevos",
-                    value = "0",
+                    value = "${data.newCustomers}",
                     icon = Icons.Default.PersonAdd,
                     color = InfoColor
                 )
                 KpiCard(
                     modifier = Modifier.weight(1f),
                     title = "Alertas",
-                    value = "0 pendientes",
+                    value = "${data.pendingAlerts} pendientes",
                     icon = Icons.Default.NotificationsActive,
                     color = WarningColor
                 )
@@ -378,17 +404,40 @@ fun DashboardHomeContent(
             }
         }
 
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "No hay ventas recientes",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    )
+        if (data.recentSales.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            "No hay ventas recientes",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            }
+        } else {
+            items(data.recentSales) { sale ->
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(sale.number, fontWeight = FontWeight.Bold)
+                            Text(sale.customer, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(sale.total.toMXN(), fontWeight = FontWeight.Bold, color = SuccessColor)
+                            Text(sale.date.toShortDate(), style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
                 }
             }
         }
@@ -506,34 +555,34 @@ fun QuickAccessCard(
 
 // Contenidos placeholder para cada tab
 @Composable
-fun InventoryTabContent(modifier: Modifier, navController: NavController) {
+fun InventoryTabContent(modifier: Modifier = Modifier, navController: NavController) {
     LaunchedEffect(Unit) { navController.navigate(Routes.INVENTORY) }
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
+    Box(modifier = modifier.fillMaxSize()) {
+        com.axtarget.processnova.ui.components.LoadingScreen()
     }
 }
 
 @Composable
-fun PosTabContent(modifier: Modifier, navController: NavController) {
+fun PosTabContent(modifier: Modifier = Modifier, navController: NavController) {
     LaunchedEffect(Unit) { navController.navigate(Routes.POS) }
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
+    Box(modifier = modifier.fillMaxSize()) {
+        com.axtarget.processnova.ui.components.LoadingScreen()
     }
 }
 
 @Composable
-fun CrmTabContent(modifier: Modifier, navController: NavController) {
+fun CrmTabContent(modifier: Modifier = Modifier, navController: NavController) {
     LaunchedEffect(Unit) { navController.navigate(Routes.CRM) }
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
+    Box(modifier = modifier.fillMaxSize()) {
+        com.axtarget.processnova.ui.components.LoadingScreen()
     }
 }
 
 @Composable
-fun FinanceTabContent(modifier: Modifier, navController: NavController) {
+fun FinanceTabContent(modifier: Modifier = Modifier, navController: NavController) {
     LaunchedEffect(Unit) { navController.navigate(Routes.FINANCE) }
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
+    Box(modifier = modifier.fillMaxSize()) {
+        com.axtarget.processnova.ui.components.LoadingScreen()
     }
 }
 

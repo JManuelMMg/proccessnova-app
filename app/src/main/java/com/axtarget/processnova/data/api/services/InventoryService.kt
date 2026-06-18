@@ -6,7 +6,7 @@ import retrofit2.http.*
 
 interface InventoryService {
 
-    @GET("inventory/api/products/")
+    @GET("inventory/api/")
     suspend fun getProducts(): Response<List<Product>>
 
     @GET("inventory/api/products/{id}/")
@@ -24,7 +24,7 @@ interface InventoryService {
     @GET("inventory/api/categories/")
     suspend fun getCategories(): Response<List<Category>>
 
-    @GET("inventory/api/stock-movements/")
+    @GET("inventory/api/movements/")
     suspend fun getStockMovements(): Response<List<StockMovement>>
 
     @GET("inventory/api/suppliers/")

@@ -6,13 +6,13 @@ import retrofit2.http.GET
 
 interface DashboardService {
 
-    @GET("api/dashboard/")
+    @GET("dashboard/api/")
     suspend fun getDashboard(): Response<DashboardData>
 
-    @GET("api/dashboard/sales-chart/")
+    @GET("dashboard/api/sales-chart/")
     suspend fun getSalesChart(): Response<List<com.axtarget.processnova.data.models.SalesChartPoint>>
 
-    @GET("api/dashboard/recent-sales/")
+    @GET("dashboard/api/recent-sales/")
     suspend fun getRecentSales(): Response<List<com.axtarget.processnova.data.models.SaleSummary>>
 }
 

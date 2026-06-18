@@ -1,6 +1,7 @@
 package com.axtarget.processnova.data.repository
 
 import com.axtarget.processnova.core.Result
+import com.axtarget.processnova.core.getHttpErrorMessage
 import com.axtarget.processnova.data.api.ApiClient
 import com.axtarget.processnova.data.api.services.*
 import com.axtarget.processnova.data.local.dao.SaleDao
@@ -19,7 +20,7 @@ class SalesRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: Cart())
             } else {
-                Result.Error("Error al obtener carrito", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener carrito"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -32,7 +33,7 @@ class SalesRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: Cart())
             } else {
-                Result.Error("Error al agregar al carrito", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al agregar al carrito"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -45,7 +46,7 @@ class SalesRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: Cart())
             } else {
-                Result.Error("Error al actualizar cantidad", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al actualizar cantidad"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -58,7 +59,7 @@ class SalesRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: Cart())
             } else {
-                Result.Error("Error al eliminar del carrito", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al eliminar del carrito"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -71,7 +72,7 @@ class SalesRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: Cart())
             } else {
-                Result.Error("Error al limpiar carrito", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al limpiar carrito"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -86,7 +87,7 @@ class SalesRepository(
                     Result.Success(it)
                 } ?: Result.Error("Error en el cobro")
             } else {
-                Result.Error("Error en el cobro: ${response.code()}", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error en el cobro"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -101,7 +102,7 @@ class SalesRepository(
                     Result.Success(it)
                 } ?: Result.Error("Producto no encontrado")
             } else {
-                Result.Error("Producto no encontrado", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Producto no encontrado"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -114,7 +115,7 @@ class SalesRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: emptyList())
             } else {
-                Result.Error("Error al obtener productos", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener productos"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -139,7 +140,7 @@ class SalesRepository(
                 sales.forEach { saleDao.markAsSynced(it.localId) }
                 Result.Success(response.body() ?: SyncResponse())
             } else {
-                Result.Error("Error al sincronizar", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al sincronizar"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -152,7 +153,7 @@ class SalesRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: emptyList())
             } else {
-                Result.Error("Error al obtener historial", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener historial"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -167,7 +168,7 @@ class SalesRepository(
                     Result.Success(it)
                 } ?: Result.Error("Venta no encontrada")
             } else {
-                Result.Error("Error al obtener venta", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al obtener venta"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -180,7 +181,7 @@ class SalesRepository(
             if (response.isSuccessful) {
                 Result.Success(response.body() ?: CancelResponse())
             } else {
-                Result.Error("Error al cancelar venta", response.code())
+                Result.Error(getHttpErrorMessage(response.code(), "Error al cancelar venta"), response.code())
             }
         } catch (e: Exception) {
             Result.Error(handleException(e))
@@ -199,10 +200,12 @@ class SalesRepository(
     fun getAllOfflineSales(): Flow<List<OfflineSale>> = saleDao.getAllSales()
 
     private fun handleException(e: Exception): String {
+        android.util.Log.e("SalesRepo", "Error de red", e)
         return when (e) {
-            is java.net.SocketTimeoutException -> "Conexión lenta, verifica tu internet"
+            is java.net.SocketTimeoutException -> "Servidor lento (Render despertando), reintenta en un momento"
             is java.net.UnknownHostException -> "Sin conexión a internet"
-            is java.io.IOException -> "Error de conexión"
+            is java.net.ConnectException -> "No se pudo conectar al servidor. Reintentando..."
+            is java.io.IOException -> "Error de conexión: ${e.message}"
             else -> "Error inesperado: ${e.message}"
         }
     }

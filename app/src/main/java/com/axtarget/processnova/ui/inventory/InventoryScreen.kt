@@ -174,7 +174,7 @@ private fun InventoryContent(
         }
 
         if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            com.axtarget.processnova.ui.components.LoadingScreen()
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 val filtered = products.filter {
